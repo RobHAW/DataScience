@@ -1,0 +1,16 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+Libraries Importieren
+```{r}
+library(cluster)
+library(readr)
+```
+CSV Importieren mit zusammengefügten und gereinigten Daten
+```{r}
+Books <- read_delim("alle.csv", 
+    ";", escape_backslash = TRUE, escape_double = FALSE, 
+    trim_ws = TRUE)
+```
+
