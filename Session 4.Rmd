@@ -3,12 +3,23 @@ title: "Hausaufgabe Session 4"
 ---
 
 •Bitte erstellen Sie ein Notebook mit weiteren Features (Alter, Geschlecht und Klasse sind als Beispiel in meinem Notebook auf GitHub)
+
 •Was sind die Unterschiede in der Performance der Algorithmen?
 
+Die Algorithmen funktionieren unterschiedlich gut, je nach dem welche Variablen einbezogen werden.
+Ich hatte das Beispiel durchlaufen lassen mit Alter, Geschlecht und Klasse und die Performance der SVM war die schlechteste, hatte aber immer noch ein AUC über 0,7. Der AUC des Naive Bayes war über 0,8 und wurde nur vom Decision Tree geschlagen.
+Dann habe ich den Fahrpreis hinzu genommen. Der AUC des SVM ist auf 0,827 gestiegen. Der AUC des Naive Bayes ist auf 0,783 gefallen. Decision Tree hatte immer noch den besten AUC mit 0,85.
 
 
 •Finden Sie Erklärungen dafür.
 
+Der Fahrpreis hängt mit der Klasse zusammen. Der Decision Tree wird die Klasse schon als wichtigen Faktor mit einbezogen haben, weshalb das hinzufügen des Fahrpreises keine große Veränderung gebracht hat.
+
+Ich vermute, dass dieser Zusammenhang auch der Grund dafür ist, dass die SVM eine bessere Vorhersage treffen konnte und die zusätzliche Variable eine Trennung der Punkte im Vektorraum klarer machte.
+
+Das schlechtere Ergebnis mit den Fahrpreis beim Naive Bayes führe ich darauf zurück, dass es beim Fahrpreis durchaus auf Distanzen ankommt.
+
+Das Ergebnis ohne Fahrpreis, in dem die Performance des Naive Bayes besser war als der SVM, liegt vielleicht an der größe des Datensatzes.
 
 # Libraries und Daten
 ```{r}
@@ -30,23 +41,18 @@ titanic %>%
   group_by(survived) %>%
   summarize(n = n())
 ```
-# 1. Versuch mit SVM mit 2 Variablen
+# Versuch mit SVM mit 2 Variablen
 
 
 ```{r}
 (titanic.df <- titanic %>%
-  select(survived,pclass,age, sex, fare))
+  select(survived,pclass, sex))
 ```
 Alter Komma durch Punkt ersetzen
-Fare Komma und alles hinter dem Komma wegnehmen
 ```{r}
 titanic.df <- titanic.df %>%
   mutate(age = as.numeric(str_replace(age,",*","")))
-titanic.df <- titanic.df %>%
-  mutate(fare = as.numeric(str_replace(fare,",","")))
-titanic.df <- titanic.df %>%
-  mutate(sex = str_replace(sex, "female", "1")) %>%
-  mutate(sex = str_replace(sex, "male", "0"))
+
 ```
 
 ```{r}
@@ -106,25 +112,32 @@ pROC_obj <- roc(test.results$survived, test.results$pred,
 
 # Mit mehr als zwei Features
 
+Dataframe mit den Features Survived/Class/Sex/age/fare
 ```{r}
 (titanic.df <- titanic %>%
-  select(survived,pclass,sex,age) %>%
+  select(survived,pclass,sex,age,fare) %>%
    mutate(survived = as.factor(survived)))
 ```
+
 
 ```{r}
 titanic.df <- titanic.df %>%
   mutate(age = as.numeric(str_replace(age,",",".")))
+titanic.df <- titanic.df %>%
+  mutate(fare = as.numeric(str_replace(fare,",","")))
 ```
 
 ```{r}
 titanic.df <- na.omit(titanic.df)
 ```
-
+Geschlecht zum Faktor machen
 ```{r}
 titanic.df <- titanic.df %>%
-  mutate(sex = ifelse(sex == "female", 1, 0))
+  mutate(sex = ifelse(sex == "female", 1, 0)) %>%
+  mutate(sex = as.factor(sex))
 ```
+
+SVM
 
 ```{r}
 set.seed(393)
