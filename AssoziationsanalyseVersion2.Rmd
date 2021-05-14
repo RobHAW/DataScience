@@ -1,0 +1,135 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+Teil A
+1) Spielen Sie mit den Support- und Confidence-Werten. Was fällt Ihnen auf?
+
+Je niedriger die Werte sind, desto mehr Regeln/Assoziationen werden gefunden.
+Bei unserem Datensatz muss der Support niedrig sein, weil die Anzahl der Transaktionen, in denen ein bestimmtes Buch drin ist, vergleichbar niedrig ist.
+Confidence habe ich auch recht weit runter gestellt, damit er mehr Regeln findet.
+
+2) Wir haben jetzt alle Bewertungen drin, ergibt das Sinn?
+
+Momentan wird eine Verbindung erstellt zwischen den Büchern, zu denen ein User eine Bewertung abgegeben hat. Das allein ergibt wenig Sinn für Empfehlungen. Es würde Sinn ergeben für Auswertungen von Lesverhalten: Zu welchen Büchern tendieren Leser von Buch X. 
+
+3) Wie könnte eine bessere Lösung aussehen?
+
+Die Bewertung mit einzubeziehen, so dass nur gut bewertete Bücher auch empfohlen werden.
+
+
+Libraries
+```{r}
+library(arules)
+library(readr)
+library(arulesViz)
+library(tidyverse)
+```
+
+CSV Importieren mit zusammengefügten und gereinigten Daten
+Ein Fehler, den ich beim Importieren des großen Datensatzes gemacht habe, war, dass ich die Importierregeln der original Dateien nicht entfernt habe und escape_backslash=True etc noch drin waren, weshalb er es falsch eingelesen hat.
+```{r}
+books <- read_csv("alle.csv")
+```
+Splitten des DF
+
+```{r}
+
+gesplittet <- split(books$`Book-Title`,books$`User-ID`)
+```
+
+```{r}
+length(gesplittet)
+```
+
+
+Den Transactions Namen zu geben, lasse ich. Ich weiß nicht warum, aber eine Liste mit Namen macht das Transaction Objekt um einiges größer
+```{r}
+#names(gesplittet) <- paste("Tr",c(1:92099), sep = "")
+```
+Umwandlung in Transaction-Format
+```{r}
+trans <- as(gesplittet, "transactions")
+```
+Die Matrix lasse ich lieber weg, zuviele schlechte Erfahrungen
+
+Regeln werden gemined
+```{r}
+trans.rules <- apriori(trans, parameter=list(supp=0.001, conf=0.3, target="rules"))
+```
+
+```{r}
+(head(inspect(subset(trans.rules)), 10))
+```
+Regeln, die einen besonders hohen Lift haben
+```{r}
+subrules <- head(trans.rules, n = 10, by = "lift")
+```
+
+Visualisierung
+```{r}
+plot(subrules, method = "graph")
+```
+
+Teil B
+
+4) Erstellen Sie eine Analyse, bei der nicht die Bücher, sondern die Autoren in den Transaktionen enthalten sind
+
+5) Fällt Ihnen etwas in der Datenqualität auf?
+
+Es werden, im Verlgeich zu den Buchtiteln, wenig Regeln gefunden. Selbst den Confidence Wert weiter herunter zu setzen, bringt keine zusätzlichen Assoziationen.
+Ich vermute es liegt an den verschiedenen Arten, wie die Namen der Autoren geschrieben wurden, ob Namen abgekürzt wurden, oder andere Autoren beteiligt waren und so z.B. "et al" am Namen hängt
+
+
+6) Wie könnte man das mit regulären Ausdrücken beheben?
+
+Die Namen müssen noch weiter Bereinigt werden. Sonderzeichen, auch Klammern und Anführungszeichen, Abkürzungen und Titel entfernt werden.
+
+7) Wie kann man nun noch sicherstellen, dass nur die Autoren weiterempfohlen werden, deren Bücher man auch (mehrheitlich) gut fand?
+
+Die einfachste Methode wäre, den Dataframe nach Bewertungen zu filtern, die über einen bestimmten Wert sind.
+So wie ich es bei den Buchbewertungen einer früheren Sitzung getan habe:
+best_books <- filter(books_w_ratings, `Book-Rating`==10)
+
+
+8) Welche anderen Features wären sinnvoll?
+
+Es wäre Sinnvoll die User in Altersgruppen einzusortieren(z.B. User über 60 fanden noch diese Bücher gut), oder je nach Region die Location anders zu gewichten, damit lokale Autoren mit in die Regeln aufgenommen werden, die im großen Datensatz untergehen würden.
+
+
+Splitten mit User und Autoren
+```{r}
+gesplittet2 <- split(books$`Book-Author` ,books$`User-ID`)
+
+```
+Neuer DF zum anschauen
+```{r}
+newDF <- books %>%
+  select(`Book-Author`,`User-ID`)
+```
+
+
+Zu einer Transaktion machen
+```{r}
+trans2 <- as(gesplittet2, "transactions")
+```
+Regeln bilden
+```{r}
+trans2.rules <- apriori(trans2, parameter=list(supp=0.01, conf=0.01, target="rules"))
+```
+
+inspezieren
+```{r}
+(head(inspect(subset(trans2.rules)), 10))
+```
+
+Für die Visualisierung nach Lift aussuchen
+```{r}
+subrules2 <- head(trans2.rules, n = 10, by = "lift")
+```
+
+Visualisierung
+```{r}
+plot(subrules2, method = "graph")
+```
+
