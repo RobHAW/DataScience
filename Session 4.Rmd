@@ -1,5 +1,6 @@
 ---
 title: "Hausaufgabe Session 4"
+output: html_notebook
 ---
 
 •Bitte erstellen Sie ein Notebook mit weiteren Features (Alter, Geschlecht und Klasse sind als Beispiel in meinem Notebook auf GitHub)
@@ -47,12 +48,6 @@ titanic %>%
 ```{r}
 (titanic.df <- titanic %>%
   select(survived,pclass, sex))
-```
-Alter Komma durch Punkt ersetzen
-```{r}
-titanic.df <- titanic.df %>%
-  mutate(age = as.numeric(str_replace(age,",*","")))
-
 ```
 
 ```{r}
