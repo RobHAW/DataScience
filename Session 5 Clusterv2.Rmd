@@ -1,0 +1,93 @@
+---
+title: "Session 5 Clustering Robin Lye"
+output: html_notebook
+---
+
+Versuchen Sie die Leser aus dem Buch-Datenset zu clustern:
+Welche Bücher gehören in welches Cluster?
+
+Die Buch-Cluster Zuordnung ist im Dataframe buchkategorie
+
+Libraries
+```{r}
+library(cluster)
+library(readr)
+library(tidyverse)
+```
+
+Daten Importieren
+```{r}
+books <- read_csv("alle.csv")
+```
+
+
+Dataframe mit 100 zufällig ausgesuchten Büchern
+```{r}
+books_random <- books %>%
+  group_by(`Book-Title`) %>%
+  select(`User-ID`,`Book-Title`) %>%
+  unique()
+
+books_random <- na.omit(books_random)
+
+books_random <- books_random[sample(nrow(books),100),]
+#Es schummeln sich immer noch NA ein
+books_random <- na.omit(books_random)
+```
+
+
+Distanzmatrik
+```{r}
+user_book.dist <- dist(books_random, method="euclidean")
+
+```
+
+
+
+Cluster Dendrogram
+```{r}
+user_book.hc <- hclust(user_book.dist, method="complete")
+plot(user_book.hc)
+```
+Normalisiert
+```{r}
+user_book.dist <- as.data.frame(scale(user_book.dist))
+user_book.dist <- dist(user_book.dist, method="euclidean")
+
+user_book.hc <- hclust(user_book.dist, method="complete")
+plot(user_book.hc)
+```
+K Means Clustering
+
+Scree-Test
+```{r}
+user_book.dist <- dist(books_random, method="euclidean")
+user_book.dist <- as.data.frame(scale(user_book.dist))
+
+
+wss <- (nrow(user_book.dist)-1)*sum(apply(user_book.dist,2,var))
+  for (i in 2:10) wss[i] <- sum(kmeans(user_book.dist, centers=i)$withinss)
+plot(1:10, wss, type="b", xlab="Number of Clusters", ylab="within groups sums of squares")
+```
+Bei meinem Datensatz ist der Knick bei 4
+
+```{r}
+k.means.fit<- kmeans(user_book.dist, 4)
+```
+
+Clusterplot
+```{r}
+clusplot(user_book.dist, k.means.fit$cluster, color=TRUE, shade=TRUE,
+labels=4, lines=0, main="K-means cluster plot")
+```
+```{r}
+#write_csv(books_random,"random.csv")
+```
+
+Zuordnung der Buchtitel zu den Kategorien, als Dataframe:
+```{r}
+newlist <- list(books_random$`Book-Title`, k.means.fit$cluster)
+buchkategorie <- as.data.frame(do.call(cbind, newlist)) 
+
+```
+
